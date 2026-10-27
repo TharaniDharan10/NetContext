@@ -890,6 +890,99 @@ def get_live_bgp_telemetry():
         pass
     return FALLBACK_BGP_DATA
 
+# Master Enterprise Cable to Customer Mapping (Ground Truth for AS6453)
+CABLE_IMPACT_MAP = {
+    "CABLE-EUROPE-RING": {
+        "customer_id": "CUST-OMNI-01",
+        "customer_name": "OmniRetail Global Commerce",
+        "customer_tier": "TIER_2",
+        "circuit_id": "CIR-OMNI-PRI",
+        "circuit_name": "OmniRetail Euro Core (LON-FRA)",
+        "hourly_liability_usd": 7999.80,
+        "max_downtime_minutes": 45,
+        "is_spof": True,
+        "recommended_target_cable_id": "CABLE-TGN-WESTERN-EUROPE",
+        "target_cable_name": "TGN-Western Europe (London ↔ Frankfurt)",
+        "action_plan": "Enact autonomous SD-WAN failover for OmniRetail Global Commerce via TGN-Western Europe to arrest $7,999.80/hr SLA penalties."
+    },
+    "CABLE-TGN-INTRA-ASIA": {
+        "customer_id": "CUST-PACIFIC-01",
+        "customer_name": "Pacific Star Media & Broadcast",
+        "customer_tier": "TIER_2",
+        "circuit_id": "CIR-PACIFIC-PRI",
+        "circuit_name": "Pacific Star Broadcast Corridor (TYO-SIN)",
+        "hourly_liability_usd": 6000.00,
+        "max_downtime_minutes": 30,
+        "is_spof": True,
+        "recommended_target_cable_id": "CABLE-SMW4",
+        "target_cable_name": "SMW-4 (Singapore ↔ Mumbai ↔ Marseille)",
+        "action_plan": "Enact autonomous SD-WAN failover for Pacific Star Media via SMW-4 to arrest $6,000.00/hr SLA penalties."
+    },
+    "CABLE-TGN-TIC": {
+        "customer_id": "CUST-SKYAIR-01",
+        "customer_name": "SkyAir Global Airlines",
+        "customer_tier": "TIER_1",
+        "circuit_id": "CIR-SKYAIR-PRI",
+        "circuit_name": "SkyAir APAC Core Trunk (SIN-CHE)",
+        "hourly_liability_usd": 0.0,
+        "max_downtime_minutes": 15,
+        "is_spof": False,
+        "backup_circuit_id": "CIR-SKYAIR-BCK",
+        "backup_cable": "TGN-Intra-Asia via Tokyo",
+        "mitigation_status": "STANDBY BACKUP RUNNING"
+    },
+    "CABLE-TGN-ATLANTIC": {
+        "customer_id": "CUST-APEX-01",
+        "customer_name": "Apex Global Banking Corp",
+        "customer_tier": "TIER_1",
+        "circuit_id": "CIR-APEX-PRI",
+        "circuit_name": "Apex Transatlantic Low-Latency Link (NYC-LON)",
+        "hourly_liability_usd": 0.0,
+        "max_downtime_minutes": 5,
+        "is_spof": False,
+        "backup_circuit_id": "CIR-APEX-BCK",
+        "backup_cable": "TGN-Pacific via Tokyo",
+        "mitigation_status": "STANDBY BACKUP RUNNING"
+    },
+    "CABLE-SMW4": {
+        "customer_id": "CUST-TRANS-01",
+        "customer_name": "TransGlobal Maritime Logistics",
+        "customer_tier": "TIER_2",
+        "circuit_id": "CIR-TRANS-PRI",
+        "circuit_name": "TransGlobal Euro-Asia Pipeline (MUM-MRS)",
+        "hourly_liability_usd": 0.0,
+        "max_downtime_minutes": 30,
+        "is_spof": False,
+        "backup_circuit_id": "CIR-TRANS-BCK",
+        "backup_cable": "Europe Ring via Marseille",
+        "mitigation_status": "STANDBY BACKUP RUNNING"
+    },
+    "CABLE-TGN-PACIFIC": {
+        "customer_id": "CUST-NEXUS-01",
+        "customer_name": "Nexus AI & Cloud Hyperscaler",
+        "customer_tier": "TIER_1",
+        "circuit_id": "CIR-NEXUS-PRI",
+        "circuit_name": "Nexus Trans-Pacific AI Highway (LAX-TYO)",
+        "hourly_liability_usd": 0.0,
+        "max_downtime_minutes": 5,
+        "is_spof": False,
+        "backup_circuit_id": "CIR-NEXUS-BCK",
+        "backup_cable": "TGN-Intra-Asia via Singapore",
+        "mitigation_status": "STANDBY BACKUP RUNNING"
+    },
+    "CABLE-TGN-WESTERN-EUROPE": {
+        "customer_id": "CUST-OMNI-01",
+        "customer_name": "OmniRetail Global Commerce",
+        "customer_tier": "TIER_2",
+        "circuit_id": "CIR-OMNI-PRI",
+        "circuit_name": "OmniRetail Euro Core (LON-FRA)",
+        "hourly_liability_usd": 0.0,
+        "max_downtime_minutes": 45,
+        "is_spof": False,
+        "mitigation_status": "PRIMARY CORRIDOR ACTIVE"
+    }
+}
+
 def query_graph_rag(question: str):
     try:
         resp = requests.post(f"{RAG_URL}/api/v1/query", json={"query": question}, timeout=60)
@@ -902,27 +995,42 @@ def query_graph_rag(question: str):
     active_incs = get_active_incidents()
     if active_incs:
         inc = active_incs[0]
-        c_name = inc.get("target_name", "Subsea Asset")
-        if "Europe Ring" in c_name:
-            return {
-                "analysis": (
-                    f"### 🚨 GraphRAG Root Cause Analysis: {c_name} Disruption\n\n"
-                    f"**1. Physical Layer Anomaly:** Optical fiber severance detected on `{inc.get('target_id')}` via C-OTDR backscatter telemetry.\n"
-                    f"**2. Impact Assessment:** Primary circuit `CIR-OMNI-PRI` (London ↔ Frankfurt) is DOWN. Customer `OmniRetail Global Commerce` (TIER_2) is experiencing total service degradation.\n"
-                    f"**3. Legal SLA Liability:** Penalty compounding at **$7,999.80 USD/hr** under strict 45-minute maximum outage terms.\n"
-                    f"**4. Topological Remediation:** Enact autonomous SD-WAN failover via redundant `CABLE-TGN-WESTERN-EUROPE` (London ↔ Frankfurt) to restore customer traffic and clear liabilities to $0.00/hr."
-                )
-            }
-        elif "TIC" in c_name:
-            return {
-                "analysis": (
-                    f"### 🛡️ GraphRAG Root Cause Analysis: {c_name} Cut\n\n"
-                    f"**1. Physical Layer Anomaly:** Subsea cable cut on `CABLE-TGN-TIC` (Chennai ↔ Singapore).\n"
-                    f"**2. Impact Assessment:** SkyAir Aviation primary circuit `CIR-SKYAIR-PRI` is DOWN.\n"
-                    f"**3. SLA Protection:** SkyAir's redundant circuit `CIR-SKYAIR-BCK` via Tokyo is UP. Fast-reroute completed in 42ms.\n"
-                    f"**4. Financial Exposure:** **$0.00/hr** (Fully Protected Route)."
-                )
-            }
+        target_id = inc.get("target_id")
+        c_name = inc.get("target_name", target_id)
+        if target_id in CABLE_IMPACT_MAP:
+            info = CABLE_IMPACT_MAP[target_id]
+            is_rerouted = info["circuit_id"] in st.session_state.get("cloud_rerouted", set())
+            if info["is_spof"]:
+                if is_rerouted:
+                    return {
+                        "analysis": (
+                            f"### 🛡️ GraphRAG Root Cause Analysis: {c_name} (Resolved via Failover)\n\n"
+                            f"**1. Physical Asset:** Severance on `{target_id}`.\n"
+                            f"**2. Impacted Tenant:** `{info['customer_name']}` (`{info['circuit_id']}`).\n"
+                            f"**3. Autonomous Remediation:** SD-WAN dynamic bypass via `{info['recommended_target_cable_id']}` successfully active.\n"
+                            f"**4. SLA Status:** Penalties arrested to **$0.00/hr** (SLA Protected)."
+                        )
+                    }
+                else:
+                    return {
+                        "analysis": (
+                            f"### 🚨 GraphRAG Root Cause Analysis: {c_name} (Active SPOF Outage)\n\n"
+                            f"**1. Physical Layer Anomaly:** Optical break on `{target_id}` detected via C-OTDR.\n"
+                            f"**2. Impact Assessment:** Primary circuit `{info['circuit_id']}` ({info['circuit_name']}) is DOWN. Customer `{info['customer_name']}` ({info['customer_tier']}) has NO configured secondary backup (SPOF).\n"
+                            f"**3. Contractual SLA Liability:** Breaching at **${info['hourly_liability_usd']:,.2f} USD/hr** (Max Downtime: {info['max_downtime_minutes']} mins).\n"
+                            f"**4. Recommended Action:** {info['action_plan']}"
+                        )
+                    }
+            else:
+                return {
+                    "analysis": (
+                        f"### 🛡️ GraphRAG Root Cause Analysis: {c_name} (Protected Route)\n\n"
+                        f"**1. Physical Layer Anomaly:** Cable cut on `{target_id}`.\n"
+                        f"**2. Impact Assessment:** Primary circuit `{info['circuit_id']}` is DOWN.\n"
+                        f"**3. Standby Protection:** Customer `{info['customer_name']}` redundant circuit `{info.get('backup_circuit_id', 'BACKUP')}` via {info.get('backup_cable', 'standby trunk')} is actively carrying production traffic.\n"
+                        f"**4. Financial Exposure:** **$0.00/hr** (Zero Unmitigated SLA Penalties)."
+                    )
+                }
     return {
         "analysis": (
             "### 🟢 AS6453 Network Health Summary\n\n"
@@ -940,11 +1048,16 @@ def get_live_sla_risk():
         pass
     
     active_incs = st.session_state.get("cloud_incidents", [])
-    has_europe_cut = any(inc.get("target_id") == "CABLE-EUROPE-RING" for inc in active_incs)
-    is_rerouted = "CIR-OMNI-PRI" in st.session_state.get("cloud_rerouted", set())
-    if has_europe_cut and not is_rerouted:
-        return {"total_sla_risk_usd_per_hour": 7999.80}
-    return {"total_sla_risk_usd_per_hour": 0.0}
+    total_risk = 0.0
+    rerouted_circuits = st.session_state.get("cloud_rerouted", set())
+    for inc in active_incs:
+        target_id = inc.get("target_id")
+        if target_id in CABLE_IMPACT_MAP:
+            info = CABLE_IMPACT_MAP[target_id]
+            cir_id = info["circuit_id"]
+            if info["is_spof"] and cir_id not in rerouted_circuits:
+                total_risk += info["hourly_liability_usd"]
+    return {"total_sla_risk_usd_per_hour": total_risk}
 
 def get_reroute_recommendations():
     try:
@@ -955,23 +1068,28 @@ def get_reroute_recommendations():
         pass
     
     active_incs = st.session_state.get("cloud_incidents", [])
-    has_europe_cut = any(inc.get("target_id") == "CABLE-EUROPE-RING" for inc in active_incs)
-    is_rerouted = "CIR-OMNI-PRI" in st.session_state.get("cloud_rerouted", set())
-    if has_europe_cut and not is_rerouted:
-        return [{
-            "customer_id": "CUST-OMNI-01",
-            "customer_name": "OmniRetail Global Commerce",
-            "customer_tier": "TIER_2",
-            "circuit_id": "CIR-OMNI-PRI",
-            "circuit_name": "OmniRetail Euro Core (LON-FRA)",
-            "severed_asset_id": "CABLE-EUROPE-RING",
-            "severed_asset_name": "Tata Europe High-Capacity Terrestrial Ring",
-            "recommended_target_cable_id": "CABLE-TGN-WESTERN-EUROPE",
-            "hourly_penalty_risk": 7999.80,
-            "max_downtime_minutes": 45,
-            "action_plan": "Enact autonomous SD-WAN failover for OmniRetail Global Commerce via TGN-Western Europe to arrest $7,999.80/hr SLA penalties."
-        }]
-    return []
+    recs = []
+    rerouted_circuits = st.session_state.get("cloud_rerouted", set())
+    for inc in active_incs:
+        target_id = inc.get("target_id")
+        if target_id in CABLE_IMPACT_MAP:
+            info = CABLE_IMPACT_MAP[target_id]
+            cir_id = info["circuit_id"]
+            if info["is_spof"] and cir_id not in rerouted_circuits:
+                recs.append({
+                    "customer_id": info["customer_id"],
+                    "customer_name": info["customer_name"],
+                    "customer_tier": info["customer_tier"],
+                    "circuit_id": info["circuit_id"],
+                    "circuit_name": info["circuit_name"],
+                    "severed_asset_id": target_id,
+                    "severed_asset_name": inc.get("target_name", target_id),
+                    "recommended_target_cable_id": info["recommended_target_cable_id"],
+                    "hourly_penalty_risk": info["hourly_liability_usd"],
+                    "max_downtime_minutes": info["max_downtime_minutes"],
+                    "action_plan": info["action_plan"]
+                })
+    return recs
 
 def get_impacted_customers():
     try:
@@ -983,24 +1101,38 @@ def get_impacted_customers():
     
     active_incs = st.session_state.get("cloud_incidents", [])
     impacted = []
-    has_europe_cut = any(inc.get("target_id") == "CABLE-EUROPE-RING" for inc in active_incs)
-    is_rerouted = "CIR-OMNI-PRI" in st.session_state.get("cloud_rerouted", set())
-    if has_europe_cut:
-        impacted.append({
-            "customer": "OmniRetail Global Commerce",
-            "tier": "TIER_2",
-            "circuit": "CIR-OMNI-PRI",
-            "status": "REROUTED" if is_rerouted else "OUTAGE_ACTIVE",
-            "sla_penalty": 0.0 if is_rerouted else 7999.80
-        })
-    if any(inc.get("target_id") == "CABLE-TGN-TIC" for inc in active_incs):
-        impacted.append({
-            "customer": "SkyAir Global Airlines",
-            "tier": "TIER_1",
-            "circuit": "CIR-SKYAIR-PRI",
-            "status": "FAILOVER_REROUTED",
-            "sla_penalty": 0.0
-        })
+    rerouted_circuits = st.session_state.get("cloud_rerouted", set())
+    for inc in active_incs:
+        target_id = inc.get("target_id")
+        if target_id in CABLE_IMPACT_MAP:
+            info = CABLE_IMPACT_MAP[target_id]
+            cir_id = info["circuit_id"]
+            if info["is_spof"]:
+                if cir_id in rerouted_circuits:
+                    mit_status = "FAILOVER ACTIVE (SLA SECURED)"
+                    penalty = 0.0
+                else:
+                    mit_status = "CRITICAL OUTAGE [SPOF]"
+                    penalty = info["hourly_liability_usd"]
+            else:
+                mit_status = "STANDBY BACKUP RUNNING"
+                penalty = 0.0
+            
+            impacted.append({
+                "customer_name": info["customer_name"],
+                "customer_tier": info["customer_tier"],
+                "circuit_id": info["circuit_id"],
+                "circuit_name": info["circuit_name"],
+                "max_downtime_minutes": info["max_downtime_minutes"],
+                "hourly_liability_usd": penalty,
+                "mitigation_status": mit_status,
+                # Aliases for backwards compatibility:
+                "customer": info["customer_name"],
+                "tier": info["customer_tier"],
+                "circuit": info["circuit_id"],
+                "status": mit_status,
+                "sla_penalty": penalty
+            })
     return impacted
 
 def get_topology_graph_data():
@@ -1140,8 +1272,8 @@ with st.sidebar:
                         "target_type": "Cable"
                     }
                     st.session_state["cloud_incidents"] = [new_inc]
-                    if selected_cable == "CABLE-EUROPE-RING":
-                        st.session_state["cloud_rerouted"].discard("CIR-OMNI-PRI")
+                    if selected_cable in CABLE_IMPACT_MAP:
+                        st.session_state["cloud_rerouted"].discard(CABLE_IMPACT_MAP[selected_cable]["circuit_id"])
                     st.error(f"Incident {new_inc['id']} active!")
                     st.rerun()
 

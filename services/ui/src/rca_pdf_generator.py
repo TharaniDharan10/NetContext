@@ -350,14 +350,15 @@ def generate_incident_rca_pdf(
             ]
         ]
         for rec in customers_list:
-            c_name = rec.get("customer_name", "Enterprise Customer")
-            c_tier = rec.get("customer_tier", "Enterprise")
-            cir_id = rec.get("circuit_id", "N/A")
-            cir_name = rec.get("circuit_name", "")
+            c_name = rec.get("customer_name") or rec.get("customer") or "Enterprise Customer"
+            c_tier = rec.get("customer_tier") or rec.get("tier") or "Enterprise"
+            cir_id = rec.get("circuit_id") or rec.get("circuit") or "N/A"
+            cir_name = rec.get("circuit_name") or ""
             cir_display = f"<code>{cir_id}</code><br/><font size='7' color='#64748B'>{cir_name}</font>" if cir_name else f"<code>{cir_id}</code>"
-            max_dt = f"{rec.get('max_downtime_minutes', 0)} mins"
-            penalty = f"${rec.get('hourly_liability_usd', 0.0):,.2f}/hr"
-            mit_status = rec.get("mitigation_status", "Failover Recommended")
+            max_dt = f"{rec.get('max_downtime_minutes') or rec.get('max_dt', 0)} mins"
+            penalty_val = rec.get('hourly_liability_usd') if rec.get('hourly_liability_usd') is not None else (rec.get('hourly_penalty_risk') if rec.get('hourly_penalty_risk') is not None else rec.get('sla_penalty', 0.0))
+            penalty = f"${float(penalty_val):,.2f}/hr"
+            mit_status = rec.get("mitigation_status") or rec.get("status") or "Failover Recommended"
             
             # Dynamic status badge color
             if "CRITICAL" in mit_status or "UNMITIGATED" in mit_status:
@@ -387,7 +388,7 @@ def generate_incident_rca_pdf(
         ]))
         story.append(cust_table)
     else:
-        story.append(Paragraph("✅ <b>No Active Customer Outage Breaches:</b> All enterprise tenant circuits (SkyAir Airlines, Apex Global Bank, OmniRetail Global) are operating on nominal primary optical corridors.", body_style))
+        story.append(Paragraph("✅ <b>No Active Customer Outage Breaches:</b> All enterprise tenant circuits (SkyAir, Apex Global, OmniRetail, TransGlobal, Nexus AI, Pacific Star) are operating on nominal optical corridors.", body_style))
     story.append(Spacer(1, 10))
 
     # 5. Autonomous Closed-Loop Remediation & Failover Strategy
