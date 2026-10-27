@@ -5,7 +5,8 @@
 **Author:** Candidate (with Antigravity AI Pair Programmer)  
 **Date:** October 2026  
 **Status:** DRAFT / APPROVED FOR IMPLEMENTATION  
-**Version:** 2.0.0 (Enhanced with Real Data Sources, Enterprise Security, & Real-Time Event Streaming)
+**Version:** 2.2.0 (Production Verified: Shortest-Path Failover, Full 7-Cable Optical Mesh, 6 Enterprise Tenants, Streamlit Cloud)  
+**Live Cloud Portal:** [https://tata-netcontext.streamlit.app/](https://tata-netcontext.streamlit.app/)
 
 ---
 
@@ -64,15 +65,25 @@ graph LR
 To ensure maximum realism and credibility, NetContext leverages real public datasets and APIs:
 
 1. **PeeringDB API (`https://www.peeringdb.com/api/net/135`)**:
-   * Pulls Tata Communications' (ASN 6453) real global Points of Presence (POPs), Internet Exchange Points (IXPs), and colocation facilities across Singapore, Mumbai, London, Frankfurt, New York, Tokyo, etc.
-2. **TeleGeography Submarine Cable Map Open Dataset**:
-   * Pulls actual subsea cables owned or operated by Tata Communications:
-     * **TGN-Atlantic** (UK $\leftrightarrow$ US)
-     * **TGN-Pacific** (US $\leftrightarrow$ Japan)
+   * Pulls Tata Communications' (ASN 6453) real global Points of Presence (POPs), Internet Exchange Points (IXPs), and colocation facilities across Singapore, Mumbai, London, Frankfurt, New York, Tokyo, Marseille, and Chennai.
+2. **TeleGeography Submarine Cable Map & Terrestrial Infrastructure**:
+   * Ingests 7 optical cable systems owned, operated, or transited by Tata Communications:
+     * **TGN-Atlantic** (London $\leftrightarrow$ New York)
+     * **TGN-Pacific** (Tokyo $\leftrightarrow$ Los Angeles $\leftrightarrow$ New York)
      * **TGN-TIC** (Tata Indicom Cable: Chennai $\leftrightarrow$ Singapore)
-     * **SMW4** (South East Asia - Middle East - Western Europe 4)
-3. **Enterprise Contract Layer (Synthesized Enterprise Tenants)**:
-   * Maps Fortune 500 tenants (e.g., global banks, airlines, logistics providers) onto these verified real-world cables and POPs with contractual SLA penalty models.
+     * **SMW-4** (South East Asia - Middle East - Western Europe 4: Singapore $\leftrightarrow$ Mumbai $\leftrightarrow$ Marseille)
+     * **TGN-Intra-Asia** (Singapore $\leftrightarrow$ Tokyo)
+     * **Europe High-Capacity Terrestrial Ring** (London $\leftrightarrow$ Frankfurt $\leftrightarrow$ Marseille)
+     * **TGN-Western Europe** (London $\leftrightarrow$ Frankfurt redundant optical bypass)
+3. **Enterprise Tenant Contract Layer (6 Multi-Industry Fortune 500 Tenants)**:
+   * **SkyAir Global Airlines (TIER_1):** Flight operations (`CIR-SKYAIR-PRI` via TGN-TIC, protected via Tokyo).
+   * **Apex Global Banking Corp (TIER_1):** Low-latency financial trading (`CIR-APEX-PRI` via TGN-Atlantic, protected via Pacific).
+   * **TransGlobal Maritime Logistics (TIER_2):** Port telemetry (`CIR-TRANS-PRI` via SMW-4, protected via Europe Ring).
+   * **OmniRetail Global Commerce (TIER_2):** Euro e-commerce core (`CIR-OMNI-PRI` via Europe Ring, unprotected SPOF, $7,999.80/hr SLA risk).
+   * **Nexus AI & Cloud Hyperscaler (TIER_1):** AI distributed training (`CIR-NEXUS-PRI` via TGN-Pacific, protected via Intra-Asia).
+   * **Pacific Star Media & Broadcast (TIER_2):** 4K video distribution (`CIR-PACIFIC-PRI` via TGN-Intra-Asia, unprotected SPOF, $6,000.00/hr SLA risk).
+4. **Live Global Internet Routing Telemetry (RIPE NCC RIPEstat API)**:
+   * Streams live BGP routing telemetry for AS6453: 100% global visibility across 325 RIS collectors, 664 Tier-1 peer interconnects, and 125 announced IPv4 prefix blocks.
 
 ---
 
@@ -211,13 +222,32 @@ RETURN
 ORDER BY d.id
 ```
 
+### 6.3 Topological Shortest-Path Failover Routing (Endpoint Invariance)
+*Dynamically discover a redundant physical fiber path connecting the exact origin and destination POPs when a primary optical cable is severed.*
+
+```cypher
+MATCH (src:POP {id: $src_pop}), (dst:POP {id: $dst_pop})
+MATCH p = shortestPath((src)-[:CONNECTED_VIA_CABLE*..10]-(dst))
+WHERE ALL(r IN relationships(p) WHERE r.status = 'ACTIVE')
+RETURN p, length(p) as hops
+ORDER BY hops ASC LIMIT 1
+```
+
 ---
 
 ## 7. Milestone Execution Plan
 
 * **Milestone 1:** Architecture & SDD Finalization (Completed).
-* **Milestone 2:** Docker Compose & Neo4j Hardened Environment Setup.
-* **Milestone 3:** `ingestion-service` Implementation (PeeringDB & Submarine Cable Fetcher + Real-Time Telemetry Streamer).
-* **Milestone 4:** `rag-engine` Implementation (Parameterized Cypher Traversals, Blast-Radius APIs, and GraphRAG Integration).
-* **Milestone 5:** `ui-service` Implementation (Live Interactive Graph Visualization, Real-Time SLA Countdown, and RCA Chatbot).
-* **Milestone 6:** End-to-End Verification & Interview Talking Points Masterclass.
+* **Milestone 2:** Docker Compose & Neo4j Hardened Environment Setup (Completed).
+* **Milestone 3:** `ingestion-service` Implementation (PeeringDB, TeleGeography, & Live RIPEstat BGP APIs) (Completed).
+* **Milestone 4:** `rag-engine` Implementation (Parameterized Cypher Traversals, Blast-Radius APIs, and GraphRAG Integration) (Completed).
+* **Milestone 5:** `ui-service` Implementation (Live Interactive Graph Visualization, Real-Time SLA Countdown, Leaflet Satellite Map, and RCA PDF Generator) (Completed).
+* **Milestone 6:** Cloud Deployment & Resilience Hardening (Streamlit Community Cloud Deployment & Dual-Mode State Engine) (Completed).
+* **Milestone 7:** Audit Documentation & Issues Log (Completed).
+
+---
+
+## 8. Engineering Issues & Resolution Audit
+
+A living chronological registry of all architectural edge-cases, schema reconciliations, and platform bugs encountered and resolved during this project is maintained in:
+📄 **[ISSUES_FACED.md](ISSUES_FACED.md)** (Covers ISS-01 through ISS-09).

@@ -32,6 +32,7 @@
    - [Scenario 6: Audit-Grade Incident RCA PDF Generation](#scenario-6-audit-grade-incident-rca-pdf-generation)
 7. [API Reference & Microservice Endpoints](#-api-reference--microservice-endpoints)
 8. [Security Hardening & Production Readiness](#-security-hardening--production-readiness)
+9. [Troubleshooting & Issues Log (ISSUES_FACED.md)](#-troubleshooting--issues-log)
 
 ---
 
@@ -497,6 +498,24 @@ Access the Operations Dashboard locally at **[http://localhost:8501](http://loca
    Neo4j runs under non-root POSIX user `UID 7474:GID 7474`.
 4. **Resilient Graph Constraints:**  
    Unique node constraints enforce data integrity across all primary keys (`POP.id`, `Cable.id`, `Circuit.id`, `Customer.id`, `SLA.id`).
+
+---
+
+## 🛠️ Troubleshooting & Issues Log
+
+A comprehensive, living audit record of all engineering bottlenecks, bugs, root causes, and applied fixes encountered during this project is maintained in:
+📄 **[ISSUES_FACED.md](ISSUES_FACED.md)**
+
+It covers:
+* **ISS-01:** Topological shortest-path failover with endpoint invariance
+* **ISS-02:** Dynamic PyVis graph-view endpoint streaming from Neo4j
+* **ISS-03:** Audit-grade single-column PDF layout optimization
+* **ISS-04:** UI dynamic hot-reloading stability
+* **ISS-05:** Docker Compose stack grouping and BuildKit engine mechanics
+* **ISS-06:** Streamlit Community Cloud hosting & root dependency resolution
+* **ISS-07:** Pandas DataFrame KeyError schema reconciliation in SPOF audit
+* **ISS-08:** Complete 7-cable optical infrastructure mapping (`CABLE_IMPACT_MAP`)
+* **ISS-09:** Multi-alias key extraction in RCA PDF generator
 
 ---
 
