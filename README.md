@@ -1,5 +1,6 @@
 # 🌐 NetContext: Autonomous Telecom Context Graph & GraphRAG RCA Platform
 
+> **Live Cloud Application:** [https://tata-netcontext.streamlit.app/](https://tata-netcontext.streamlit.app/)  
 > **Engineered for:** Forward Deployed Engineer – Context Graph Role (Tata Communications AS6453)  
 > **Tech Stack:** Python 3.11, FastAPI, Neo4j 5.26, Cypher, GraphRAG, Streamlit, Docker Compose, Leaflet, RIPEstat API
 
@@ -392,12 +393,17 @@ classDiagram
 
 ## 🧪 Interactive Verification & Operator Runbook
 
-Launch the system with a single command:
+### 🌐 Live Hosted Cloud Deployment
+The NetContext platform is deployed live on Streamlit Community Cloud:
+👉 **[https://tata-netcontext.streamlit.app/](https://tata-netcontext.streamlit.app/)**
+
+### 💻 Local Deployment with Docker Compose
+Launch the full platform locally with a single command:
 ```bash
 cd /Users/dharun/Desktop/Neo4J
 docker compose up -d
 ```
-Access the Operations Dashboard at **[http://localhost:8501](http://localhost:8501)**.
+Access the Operations Dashboard locally at **[http://localhost:8501](http://localhost:8501)**.
 
 ---
 

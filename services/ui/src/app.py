@@ -812,12 +812,28 @@ FALLBACK_BGP_DATA = {
 
 FALLBACK_SPOF = [
     {
-        "customer": "OmniRetail Global Commerce",
-        "circuit": "CIR-OMNI-PRI",
-        "cable": "Tata Europe High-Capacity Terrestrial Ring",
-        "risk_level": "CRITICAL",
-        "single_point_of_failure": True,
-        "detail": "Customer has zero redundant secondary circuits. Physical cable cut triggers immediate SLA breach clock ($7,999.80/hr)."
+        "customer_id": "CUST-OMNI-01",
+        "customer_name": "OmniRetail Global Commerce",
+        "customer_tier": "TIER_2",
+        "circuit_id": "CIR-OMNI-PRI",
+        "circuit_name": "OmniRetail Euro Core (LON-FRA)",
+        "circuit_status": "UP",
+        "transit_cable": "Tata Europe High-Capacity Terrestrial Ring",
+        "sla_name": "OmniRetail European SLA",
+        "penalty_usd_per_hour": 7999.80,
+        "allowed_downtime_mins": 45
+    },
+    {
+        "customer_id": "CUST-PACIFIC-01",
+        "customer_name": "Pacific Star Media & Broadcast",
+        "customer_tier": "TIER_2",
+        "circuit_id": "CIR-PACIFIC-PRI",
+        "circuit_name": "Pacific Star Broadcast Corridor (TYO-SIN)",
+        "circuit_status": "UP",
+        "transit_cable": "TGN Intra-Asia (TGN-IA)",
+        "sla_name": "Enterprise Broadcast SLA",
+        "penalty_usd_per_hour": 6000.0,
+        "allowed_downtime_mins": 30
     }
 ]
 
@@ -1471,11 +1487,21 @@ with tab_spof:
 
     if spof_list:
         df_spof = pd.DataFrame(spof_list)
-        df_display = df_spof[[
-            "customer_name", "customer_tier", "circuit_name",
-            "transit_cable", "penalty_usd_per_hour", "allowed_downtime_mins"
-        ]]
-        df_display.columns = ["Customer", "Tier", "Primary Circuit", "Transit Cable", "SLA Penalty ($/hr)", "Max Downtime (Mins)"]
+        col_mappings = [
+            ("customer_name", "Customer"),
+            ("customer_tier", "Tier"),
+            ("circuit_name", "Primary Circuit"),
+            ("transit_cable", "Transit Cable"),
+            ("penalty_usd_per_hour", "SLA Penalty ($/hr)"),
+            ("allowed_downtime_mins", "Max Downtime (Mins)")
+        ]
+        for c, _ in col_mappings:
+            if c not in df_spof.columns:
+                df_spof[c] = "N/A"
+        
+        cols_to_use = [c for c, _ in col_mappings]
+        rename_dict = {c: label for c, label in col_mappings}
+        df_display = df_spof[cols_to_use].rename(columns=rename_dict)
         st.dataframe(df_display, use_container_width=True)
         st.warning("⚠️ **Architectural Alert:** OmniRetail circuit `CIR-OMNI-PRI` has no secondary backup route. A single terrestrial cut on the Europe Ring results in an immediate $7,999.80/hr penalty.")
     else:
