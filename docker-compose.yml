@@ -1,0 +1,114 @@
+services:
+  # ============================================================================
+  # 1. Neo4j Graph Database Service (Community 5.x)
+  # ============================================================================
+  neo4j:
+    image: neo4j:5.26-community
+    container_name: netcontext-neo4j
+    restart: unless-stopped
+    ports:
+      # Hardened security: strictly bind to localhost (127.0.0.1), preventing WAN/LAN exposure
+      - "127.0.0.1:${NEO4J_HTTP_PORT:-7474}:7474"
+      - "127.0.0.1:${NEO4J_BOLT_PORT:-7687}:7687"
+    environment:
+      - NEO4J_AUTH=${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-NetContextSecure2026!}
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - NEO4J_server_memory_heap_initial__size=512m
+      - NEO4J_server_memory_heap_max__size=1G
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    networks:
+      - netcontext-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  # ============================================================================
+  # 2. Ingestion & Real-Time Event Streamer Service
+  # ============================================================================
+  ingestion-service:
+    build:
+      context: ./services/ingestion
+      dockerfile: Dockerfile
+    container_name: netcontext-ingestion
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${INGESTION_PORT:-8001}:8001"
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=${NEO4J_USER:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-NetContextSecure2026!}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+    volumes:
+      - ./services/ingestion/src:/app/src
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    networks:
+      - netcontext-network
+
+  # ============================================================================
+  # 3. GraphRAG & AI Reasoning Engine
+  # ============================================================================
+  rag-engine:
+    build:
+      context: ./services/rag_engine
+      dockerfile: Dockerfile
+    container_name: netcontext-rag-engine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${RAG_ENGINE_PORT:-8002}:8002"
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=${NEO4J_USER:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-NetContextSecure2026!}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+    volumes:
+      - ./services/rag_engine/src:/app/src
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    networks:
+      - netcontext-network
+
+  # ============================================================================
+  # 4. Streamlit Operations Dashboard
+  # ============================================================================
+  ui-service:
+    build:
+      context: ./services/ui
+      dockerfile: Dockerfile
+    container_name: netcontext-ui
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${UI_PORT:-8501}:8501"
+    environment:
+      - INGESTION_SERVICE_URL=http://ingestion-service:8001
+      - RAG_ENGINE_URL=http://rag-engine:8002
+      - NEO4J_BROWSER_URL=http://localhost:7474
+    volumes:
+      - ./services/ui/src:/app/src
+    depends_on:
+      - ingestion-service
+      - rag-engine
+    networks:
+      - netcontext-network
+
+networks:
+  netcontext-network:
+    driver: bridge
+    name: netcontext-network
+
+volumes:
+  neo4j_data:
+    name: netcontext_neo4j_data
+  neo4j_logs:
+    name: netcontext_neo4j_logs

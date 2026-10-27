@@ -1,0 +1,12 @@
+[theme]
+primaryColor = "#0284C7"
+font = "sans serif"
+
+[client]
+toolbarMode = "minimal"
+showErrorDetails = false
+
+[server]
+headless = true
+enableCORS = false
+enableXsrfProtection = false
